@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Intro to Event Sourcing</title>
+
+		<meta name="description" content="Event sourcing">
+		<meta name="author" content="techgaun">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/black.css" id="theme">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+          <section>
+            <h2>Intro to Event Sourcing</h2>
+            <ul>
+              <li>common pattern in most applications: only current state of domain object</li>
+              <li>traditional CRUD model doesn't scale with data-rich highly concurrent systems</li>
+              <li>Reasonably sized applications can not scale with sync req/resp style</li>
+              <li>what ES is: capture all changes to an application state as sequence of event objects</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Intro to Event Sourcing</h2>
+            <ul>
+              <li>is balance a static column or is it a cumulative result</li>
+              <li>your application's current state is the left fold of the past behaviours</li>
+              <li>application state is temporal but your events are immutable facts</li>
+              <li>no 2PC</li>
+            </ul>
+          </section>
+          <section>
+            <h2>What ES offers</h2>
+            <ul>
+              <li>EDA - events as first class citizen</li>
+              <li>Natural audit logging</li>
+              <li>Temporal queries</li>
+              <li>Scalability - writes and reads decoupling & loose coupling between components</li>
+            </ul>
+          </section>
+				</section>
+        <section>
+          <section>
+            <h2>Available EDA options</h2>
+            <ul>
+              <li>Event Notifications</li>
+              <li>Event-carried State Transfer</li>
+              <li>Event Sourcing</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Event Notification</h2>
+            <ul>
+              <li>send event messages to notify other systems of a change in its domain</li>
+              <li>just enough information for other systems to go back and talk with source system</li>
+              <li>may result in chatty systems</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Event Notification</h2>
+            <pre data-id="code-animation"><code class="hljs">
+              <script type="text/template">
+  {
+    "specversion" : "0.3",
+    "type" : "com.example.customer.address",
+    "source" : "/address",
+    "id" : "123e4567-e89b-12d3-a456-426655440000",
+    "time" : "2020-12-01T23:56:45Z",
+    "customerId": "911000100",
+    "datacontenttype" : "application/json"
+  }
+
+  {
+    "specversion" : "0.3",
+    "type" : "com.example.customer.address",
+    "source" : "/address",
+    "id" : "123e4567-e89b-12d3-a456-426655440000",
+    "time" : "2020-12-01T23:56:45Z",
+    "customerId": "911000100",
+    "datacontenttype" : "application/json",
+    "data" : {
+        "addressId" : "12366",
+         "addressPurpose": "billing"
+    }
+  }
+              </script>
+            </code></pre>
+          </section>
+          <section>
+            <h2>Event-carried State Transfer</h2>
+            <ul>
+              <li>send event messages with as much information about the change in its domain</li>
+              <li>often receivers don't need to come back to source system to act on the change</li>
+              <li>possible unnecessary data duplication and transfer</li>
+              <li>versioning gets harder</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Event-carried State Transfer</h2>
+            <pre data-id="code-animation"><code class="hljs">
+              <script type="text/template">
+{
+  "specversion" : "0.3",
+  "type" : "com.example.customer.address",
+  "source" : "/address",
+  "id" : "123e4567-e89b-12d3-a456-426655440000",
+  "time" : "2019-10-26T23:56:45Z",
+  "customerId": "911000100",
+  "datacontenttype" : "application/json",
+  "data" : {
+      "addressId" : "12366",
+      "oldState": {
+          "addressContent": {
+              "addressLine1": "84 Baker Street"
+          }
+      },
+      "newState": {
+          "addressContent": {
+              "addressLine1": "48 Baker Street"
+          }
+      }
+  }
+}
+
+{
+  "specversion" : "0.3",
+  "type" : "com.example.customer.address",
+  "source" : "/address",
+  "id" : "123e4567-e89b-12d3-a456-426655440000",
+  "time" : "2019-10-26T23:56:45Z",
+  "customerId": "911000100",
+  "datacontenttype" : "application/json",
+  "data" : {
+      "addressId" : "12366",
+      "oldState": {
+          "addressContent": {
+              "addressPurpose": "billing",
+              "addressLine1": "84 Baker Street",
+              "addressLine2": "London, UK, E1 7AE",
+              "addressTS": 1572134105    
+          }
+      },
+      "newState": {
+          "addressContent": {
+              "addressPurpose": "billing",
+              "addressLine1": "48 Baker Street",
+              "addressLine2": "London, UK, E1 7AE",
+              "addressTS": 1572134205    
+          }
+      }
+  }
+}
+              </script>
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Event Sourcing</h2>
+            <ul>
+              <li>Any change gets recorded as event object</li>
+              <li>we can confidently rebuild the system state by reprocessing the events at any time in the future</li>
+              <li>event store is your source of truth</li>
+              <li>git</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Event Sourcing</h2>
+            <img src="images/event-stream.jpeg" alt="Event Stream in EventStoreDB">
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>Event Sourcing Example</h2>
+            <img src="images/simpleService.gif" alt="Simple Service">
+            <img src="images/simpleServiceHis.gif" alt="Simple Service">
+          </section>
+          <section>
+            <h2>Event Sourcing Example</h2>
+            <img src="images/simpleEventCd.gif" alt="Simple Service">
+            <img src="images/simpleEventHis.gif" alt="Simple Service">
+          </section>
+        </section>
+
+        <section>
+          <h2>Challenges</h2>
+          <ul>
+            <li>Event Store</li>
+            <li>Event replaying over continously changing system eg. shape of events change</li>
+            <li>High storage requirement for events</li>
+            <li>CQRS</li>
+            <li>Eventual Consistency</li>
+          </ul>
+        </section>
+
+        <section>
+        </section>
+			</div>
+
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/zoom/zoom.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/search/search.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+
+			// Also available as an ES module, see:
+			// https://revealjs.com/initialization/
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				center: true,
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight ]
+			});
+
+		</script>
+
+	</body>
+</html>
